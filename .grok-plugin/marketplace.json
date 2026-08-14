@@ -1,0 +1,18 @@
+{
+  "name": "sbc-plugin-marketplace",
+  "description": "Optional native Grok marketplace metadata. Grok Build already loads Claude plugins with zero config.",
+  "version": "0.1.0",
+  "plugins": [
+    {
+      "name": "second-brain-core",
+      "source": ".",
+      "description": "Shared foundation for Spillwave ContentPack plugins: OKF schemas, typed edges, deterministic write helpers, and progressive-disclosure packing. Dual-host (Claude Code + Grok Build + Codex).",
+      "version": "0.1.0",
+      "compatibility": {
+        "claude_plugin": true,
+        "zero_config": true
+      },
+      "repository": "https://github.com/SpillwaveSolutions/second-brain-core"
+    }
+  ]
+}

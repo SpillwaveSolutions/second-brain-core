@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "plugin": "second-brain-core",
+  "types": [
+    {
+      "type": "Concept",
+      "folder": null,
+      "description": "Generic typed knowledge node"
+    },
+    {
+      "type": "ContextPack",
+      "folder": null,
+      "description": "Bounded ranked typed-hop subgraph"
+    },
+    {
+      "type": "TypedEdge",
+      "folder": null,
+      "description": "Directed relationship between concepts"
+    },
+    {
+      "type": "AgentIdentity",
+      "folder": null,
+      "description": "Stable identity string for a writer agent"
+    },
+    {
+      "type": "WriteEvent",
+      "folder": null,
+      "description": "Append-only record of a deterministic write"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "second-brain-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Second Brain Core \u2014 Claude Code / Grok Build / Codex plugin",
+  "scripts": {
+    "test": "python3 tests/test_sbc.py",
+    "validate": "python3 scripts/sbc_common.py validate --bundle sample-knowledge",
+    "init": "python3 scripts/sbc_common.py init-bundle --bundle sample-knowledge --title \"Second Brain Core\" --catalogs \"concepts,packs\""
+  },
+  "license": "MIT"
+}

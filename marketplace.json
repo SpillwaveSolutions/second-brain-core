@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "sbc-plugin-marketplace",
+  "owner": {
+    "name": "Rick Hightower",
+    "url": "https://github.com/RichardHightower"
+  },
+  "plugins": [
+    {
+      "name": "second-brain-core",
+      "source": "./",
+      "description": "Second Brain Core",
+      "version": "0.1.0"
+    }
+  ]
+}
