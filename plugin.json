@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "second-brain-core",
-  "version": "0.1.0",
-  "description": "Shared foundation for Spillwave ContentPack plugins: OKF schemas, typed edges, deterministic write helpers, and progressive-disclosure packing. Works with Claude Code, Grok Build, Codex, Agent Plugins clients, Grok Bot, and LangChain Deep Agents.",
+  "version": "0.2.0",
+  "description": "Shared foundation for Spillwave ContentPack plugins: OKF schemas, typed edges, deterministic write helpers, progressive-disclosure packing, and write isolation.",
   "author": {
     "name": "Rick Hightower",
     "url": "https://github.com/RichardHightower"
@@ -14,13 +14,11 @@
     "okf",
     "context-pack",
     "second-brain",
-    "typed-edges",
-    "progressive-disclosure",
+    "isolation",
+    "agent-plugins",
     "claude-code",
     "grok-build",
     "codex",
-    "agent-plugins",
-    "deep-agents",
-    "content-pack"
+    "deep-agents"
   ]
 }

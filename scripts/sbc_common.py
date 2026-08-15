@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import secrets
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,6 +15,15 @@ try:
     import yaml
 except ImportError:
     yaml = None
+
+
+OWNED_TYPES = {
+    "Concept": "concepts",
+    "ContextPack": "packs",
+    "TypedEdge": "packs",
+    "AgentIdentity": "identities",
+    "WriteEvent": "write-events",
+}
 
 
 def now_iso() -> str:
@@ -64,6 +75,30 @@ def dump_frontmatter(meta: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def resolve_bundle(raw: str | None) -> Path:
+    value = (raw or os.environ.get("SECOND_BRAIN_ROOT") or "knowledge").strip()
+    p = Path(value)
+    if p.exists() and p.is_dir():
+        return p
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def resolve_author(explicit: str | None) -> str:
+    author = (explicit or os.environ.get("SECOND_BRAIN_IDENTITY") or "").strip()
+    if not author:
+        print(
+            json.dumps(
+                {
+                    "error": "claim an identity first",
+                    "hint": "pass --author or set SECOND_BRAIN_IDENTITY",
+                }
+            )
+        )
+        raise SystemExit(1)
+    return author
+
+
 def bundle_root(path: Path) -> Path:
     p = Path(path)
     if p.exists() and p.is_dir():
@@ -91,8 +126,37 @@ def catalog_index(bundle: Path, folder: str, title: str) -> None:
         )
 
 
+def emit_write_event(bundle: Path, *, author: str, typ: str, dest: Path, host: str) -> Path | None:
+    if typ == "WriteEvent":
+        return None
+    rel = "/" + str(dest.relative_to(bundle)).replace("\\", "/")
+    event_id = f"{int(datetime.now(timezone.utc).timestamp())}-{secrets.token_hex(3)}"
+    ev = bundle / "write-events" / f"{event_id}.md"
+    write_concept(
+        ev,
+        {
+            "type": "WriteEvent",
+            "title": f"write {typ} {dest.name}",
+            "status": "recorded",
+            "timestamp": now_iso(),
+            "author": author,
+            "tags": ["write-event", typ.lower()],
+            "links": [{"target": rel, "rel": "documents"}],
+        },
+        (
+            f"# Write {typ}\n\n"
+            f"- actor: `{author}`\n"
+            f"- host: `{host}`\n"
+            f"- path: `{rel}`\n"
+            f"- type: `{typ}`\n"
+        ),
+    )
+    catalog_index(bundle, "write-events", "Write Events")
+    return ev
+
+
 def cmd_init(args) -> int:
-    bundle = bundle_root(Path(args.bundle))
+    bundle = resolve_bundle(args.bundle)
     catalogs = args.catalogs.split(",") if args.catalogs else []
     write_concept(
         bundle / "index.md",
@@ -114,23 +178,41 @@ def cmd_init(args) -> int:
 
 
 def cmd_write(args) -> int:
-    bundle = bundle_root(Path(args.bundle))
+    author = resolve_author(getattr(args, "author", "") or None)
+    bundle = resolve_bundle(args.bundle)
+    typ = args.type
+    if typ not in OWNED_TYPES and typ not in {"Index"}:
+        # Core allows its own types; job packs override this script.
+        pass
     slug = args.slug or slugify(args.title)
-    folder = args.folder
+    folder = args.folder or OWNED_TYPES.get(typ, "concepts")
     dest = bundle / folder / f"{slug}.md"
+    host = os.environ.get("SECOND_BRAIN_HOST", "")
     meta = {
-        "type": args.type,
+        "type": typ,
         "title": args.title,
         "status": args.status or "active",
         "timestamp": now_iso(),
-        "author": args.author or "",
+        "author": author,
     }
     if args.tags:
         meta["tags"] = [t.strip() for t in args.tags.split(",") if t.strip()]
     body = args.body or f"# {args.title}\n"
     write_concept(dest, meta, body)
     catalog_index(bundle, folder, folder.replace("-", " ").title())
-    print(json.dumps({"ok": True, "path": str(dest)}))
+    event = None
+    if not getattr(args, "no_event", False):
+        event = emit_write_event(bundle, author=author, typ=typ, dest=dest, host=host)
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "path": str(dest),
+                "author": author,
+                "event": str(event) if event else None,
+            }
+        )
+    )
     return 0
 
 
@@ -146,8 +228,17 @@ def iter_concepts(bundle: Path):
         yield {"path": rel, "file": p, "meta": meta, "body": body}
 
 
+def merge_overlay(base: Path, overlay: Path) -> dict:
+    """Session overlay wins for the same relative path."""
+    concepts = {c["path"]: c for c in iter_concepts(base)}
+    if overlay.exists():
+        for c in iter_concepts(overlay):
+            concepts[c["path"]] = c
+    return concepts
+
+
 def cmd_validate(args) -> int:
-    bundle = Path(args.bundle)
+    bundle = Path(args.bundle or os.environ.get("SECOND_BRAIN_ROOT") or "knowledge")
     errors = []
     seen = []
     for c in iter_concepts(bundle):
@@ -166,12 +257,18 @@ def cmd_validate(args) -> int:
 
 
 def cmd_pack(args) -> int:
-    bundle = Path(args.bundle)
-    concepts = {c["path"]: c for c in iter_concepts(bundle)}
+    bundle = Path(args.bundle or os.environ.get("SECOND_BRAIN_ROOT") or "knowledge")
+    overlay = Path(args.overlay) if getattr(args, "overlay", "") else None
+    concepts = merge_overlay(bundle, overlay) if overlay else {c["path"]: c for c in iter_concepts(bundle)}
     root = args.root
     if not root.startswith("/"):
-        # resolve by title or slug
-        matches = [p for p, c in concepts.items() if c["meta"].get("title", "").lower() == root.lower() or p.endswith("/" + root + ".md") or p.endswith(root + ".md")]
+        matches = [
+            p
+            for p, c in concepts.items()
+            if c["meta"].get("title", "").lower() == root.lower()
+            or p.endswith("/" + root + ".md")
+            or p.endswith(root + ".md")
+        ]
         if not matches:
             print(json.dumps({"error": f"root not found: {root}"}))
             return 1
@@ -223,7 +320,7 @@ def cmd_pack(args) -> int:
     out = Path(args.out) if args.out else bundle / "packs" / f"{slugify(concepts[root]['meta'].get('title', 'pack'))}-pack.md"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text("\n".join(lines), encoding="utf-8")
-    print(json.dumps({"ok": True, "path": str(out), "nodes": included}))
+    print(json.dumps({"ok": True, "path": str(out), "nodes": included, "overlay": str(overlay) if overlay else None}))
     return 0
 
 
@@ -232,31 +329,33 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
 
     i = sub.add_parser("init-bundle")
-    i.add_argument("--bundle", required=True)
+    i.add_argument("--bundle", default="")
     i.add_argument("--title", default="Second Brain")
     i.add_argument("--description", default="")
     i.add_argument("--catalogs", default="")
 
     w = sub.add_parser("write")
-    w.add_argument("--bundle", required=True)
+    w.add_argument("--bundle", default="")
     w.add_argument("--type", required=True)
     w.add_argument("--title", required=True)
-    w.add_argument("--folder", required=True)
+    w.add_argument("--folder", default="")
     w.add_argument("--slug", default="")
     w.add_argument("--status", default="active")
     w.add_argument("--author", default="")
     w.add_argument("--tags", default="")
     w.add_argument("--body", default="")
+    w.add_argument("--no-event", action="store_true")
 
     v = sub.add_parser("validate")
-    v.add_argument("--bundle", required=True)
+    v.add_argument("--bundle", default="")
 
     k = sub.add_parser("pack")
-    k.add_argument("--bundle", required=True)
+    k.add_argument("--bundle", default="")
     k.add_argument("--root", required=True)
     k.add_argument("--hops", default="2")
     k.add_argument("--max-nodes", default="20")
     k.add_argument("--out", default="")
+    k.add_argument("--overlay", default="")
 
     args = p.parse_args()
     fn = {"init-bundle": cmd_init, "write": cmd_write, "validate": cmd_validate, "pack": cmd_pack}[args.cmd]
