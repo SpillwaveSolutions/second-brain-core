@@ -4,10 +4,9 @@ title: Northstar ContextPack
 status: active
 timestamp: 2026-08-14T00:00:00Z
 author: Grok Bot: Second Brain Core
-tags:
-  - sample
-  - northstar
-links: []
+links:
+  - target: /concepts/northstar-concept.md
+    rel: documents
 ---
 
 # Northstar ContextPack

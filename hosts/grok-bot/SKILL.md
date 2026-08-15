@@ -5,7 +5,7 @@ description: Bind a Grok Bot agent to the second-brain-core ContentPack. Isolati
 
 # Grok Bot / Second Brain Core
 
-Follow `docs/GROK_BOT.md`.
+Read `docs/ONBOARDING.md` first, then follow `docs/GROK_BOT.md`.
 
 1. Identity: `grok-bot/second-brain-core`
 2. Open an isolation session before writes (`scripts/brain_session.py open`) unless the human already pointed `SECOND_BRAIN_ROOT` at a session worktree.

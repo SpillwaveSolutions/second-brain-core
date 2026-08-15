@@ -4,7 +4,7 @@ You are operating the **Second Brain Core** ContentPack plugin.
 
 ## When to use
 
-Use this plugin when the user is working on: Concept, ContextPack, TypedEdge, AgentIdentity, WriteEvent.
+Use this plugin when the user is working on any type listed in README.md / `schemas/okf-concepts/registry.json`. Read `docs/ONBOARDING.md` first.
 
 ## Write path
 
