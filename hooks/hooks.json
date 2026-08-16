@@ -1,13 +1,14 @@
 {
-  "description": "Remind writers to use deterministic helpers and isolation sessions.",
+  "description": "Fail-closed validate after knowledge writes. No SessionStart reminders.",
   "hooks": {
-    "SessionStart": [
+    "PostToolUse": [
       {
+        "matcher": "apply_patch|Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"print('Second brain: claim SECOND_BRAIN_IDENTITY; write only via pack scripts; isolate writes with brain_session.py open')\"",
-            "timeout": 5
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/scripts/sbc-hook-validate.sh\"",
+            "timeout": 45
           }
         ]
       }
