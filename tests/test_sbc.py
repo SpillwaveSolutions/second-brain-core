@@ -9,6 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "sbc_common.py"
 SESSION = ROOT / "scripts" / "brain_session.py"
+HOOK = ROOT / "scripts" / "sbc-hook-validate.sh"
+HOOKS_JSON = ROOT / "hooks" / "hooks.json"
 SAMPLE = ROOT / "sample-knowledge"
 
 
@@ -30,6 +32,20 @@ def run_session(*args, cwd=None):
         capture_output=True,
         text=True,
         cwd=cwd,
+    )
+
+
+def run_hook(*args, stdin=None, env=None):
+    e = os.environ.copy()
+    e.pop("SECOND_BRAIN_ROOT", None)
+    if env:
+        e.update(env)
+    return subprocess.run(
+        ["bash", str(HOOK), *args],
+        input=stdin,
+        capture_output=True,
+        text=True,
+        env=e,
     )
 
 
@@ -193,10 +209,84 @@ def test_sample_pack_walks():
     assert len(data.get("nodes") or []) >= 3, data
 
 
+def test_hooks_json_is_fail_closed_post_tool_use():
+    data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
+    assert "SessionStart" not in data.get("hooks", {}), data
+    post = data["hooks"]["PostToolUse"]
+    matchers = " ".join(entry.get("matcher", "") for entry in post)
+    assert "apply_patch" in matchers
+    assert "Write" in matchers
+    assert "Edit" in matchers
+    commands = []
+    for entry in post:
+        for hook in entry.get("hooks", []):
+            commands.append(hook.get("command", ""))
+    assert any("sbc-hook-validate.sh" in c for c in commands), commands
+
+
+def test_hook_valid_bundle_exits_zero():
+    r = run_hook(str(SAMPLE / "concepts" / "northstar-concept.md"))
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "validating bundle at" in r.stdout
+
+
+def test_hook_invalid_bundle_exits_nonzero():
+    with tempfile.TemporaryDirectory() as td:
+        bundle = Path(td) / "knowledge"
+        run("init-bundle", "--bundle", str(bundle), "--title", "Broken", "--catalogs", "concepts")
+        dest = bundle / "concepts" / "broken.md"
+        dest.write_text(
+            "---\n"
+            "type: Concept\n"
+            "title: Broken\n"
+            "links:\n"
+            "  - target: /concepts/does-not-exist.md\n"
+            "    rel: related_to\n"
+            "---\n\n# Broken\n",
+            encoding="utf-8",
+        )
+        r = run_hook(str(dest))
+        assert r.returncode != 0, r.stdout + r.stderr
+        assert "validating bundle at" in r.stdout
+
+
+def test_hook_not_a_bundle_is_silent_ok():
+    with tempfile.TemporaryDirectory() as td:
+        notes = Path(td) / "notes.md"
+        notes.write_text("# just notes\n", encoding="utf-8")
+        r = run_hook(str(notes))
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert r.stdout == ""
+        assert r.stderr == ""
+
+
+def test_hook_apply_patch_payload():
+    payload = json.dumps(
+        {
+            "tool_name": "apply_patch",
+            "tool_input": {
+                "input": (
+                    "*** Begin Patch\n"
+                    f"*** Update File: {SAMPLE / 'concepts' / 'northstar-concept.md'}\n"
+                    "*** End Patch\n"
+                )
+            },
+        }
+    )
+    r = run_hook(stdin=payload)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "validating bundle at" in r.stdout
+
+
 if __name__ == "__main__":
     test_sample_validates()
     test_write_requires_author()
     test_init_and_write()
     test_isolation_two_sessions_do_not_clobber()
     test_sample_pack_walks()
+    test_hooks_json_is_fail_closed_post_tool_use()
+    test_hook_valid_bundle_exits_zero()
+    test_hook_invalid_bundle_exits_nonzero()
+    test_hook_not_a_bundle_is_silent_ok()
+    test_hook_apply_patch_payload()
     print("ok")

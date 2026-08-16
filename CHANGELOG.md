@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 — 2026-08-16
+
+- Codex / Claude PostToolUse hook is **fail-closed**: `sbc-hook-validate.sh` runs `sbc_common.py validate` after `apply_patch` / Write / Edit and exits non-zero on a broken bundle.
+- Removed the SessionStart print reminder (a reminder is not a harness).
+- Writes outside a knowledge bundle stay a silent no-op.
+
 ## 0.3.1 — 2026-08-16
 
 - Privacy: isolation tests and docs use only fictional **lumenfield-detector** / **northstar-console** actors.
