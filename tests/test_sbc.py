@@ -115,11 +115,11 @@ def test_isolation_two_sessions_do_not_clobber():
             "--bundle",
             "knowledge",
             "--actor",
-            "claude-code/threatiq",
+            "claude-code/lumenfield-detector",
             "--host",
             "claude-code",
             "--project",
-            "threatiq",
+            "lumenfield-detector",
         )
         assert a.returncode == 0, a.stdout + a.stderr
         sa = json.loads(a.stdout)
@@ -130,11 +130,11 @@ def test_isolation_two_sessions_do_not_clobber():
             "--bundle",
             "knowledge",
             "--actor",
-            "grok-build/ui-app",
+            "grok-bot/northstar-console",
             "--host",
-            "grok-build",
+            "grok-bot",
             "--project",
-            "ui-app",
+            "northstar-console",
         )
         assert b.returncode == 0, b.stdout + b.stderr
         sb = json.loads(b.stdout)
@@ -148,9 +148,9 @@ def test_isolation_two_sessions_do_not_clobber():
             "--type",
             "Concept",
             "--title",
-            "Threat Detector Note",
+            "Lumenfield Detector Note",
             "--author",
-            "claude-code/threatiq",
+            "claude-code/lumenfield-detector",
         )
         assert r.returncode == 0, r.stdout + r.stderr
         r = run(
@@ -160,17 +160,17 @@ def test_isolation_two_sessions_do_not_clobber():
             "--type",
             "Concept",
             "--title",
-            "UI Layout Decision",
+            "Northstar Console Layout",
             "--author",
-            "grok-build/ui-app",
+            "grok-bot/northstar-console",
         )
         assert r.returncode == 0, r.stdout + r.stderr
 
         # Isolation: each session only has its own new file
-        assert (Path(sa["bundle"]) / "concepts" / "threat-detector-note.md").exists()
-        assert not (Path(sa["bundle"]) / "concepts" / "ui-layout-decision.md").exists()
-        assert (Path(sb["bundle"]) / "concepts" / "ui-layout-decision.md").exists()
-        assert not (Path(sb["bundle"]) / "concepts" / "threat-detector-note.md").exists()
+        assert (Path(sa["bundle"]) / "concepts" / "lumenfield-detector-note.md").exists()
+        assert not (Path(sa["bundle"]) / "concepts" / "northstar-console-layout.md").exists()
+        assert (Path(sb["bundle"]) / "concepts" / "northstar-console-layout.md").exists()
+        assert not (Path(sb["bundle"]) / "concepts" / "lumenfield-detector-note.md").exists()
 
         ca = run_session("close", "--repo", str(repo), "--session", sa["session_id"], "--no-push", "--allow-local")
         assert ca.returncode == 0, ca.stdout + ca.stderr
@@ -178,10 +178,10 @@ def test_isolation_two_sessions_do_not_clobber():
         assert cb.returncode == 0, cb.stdout + cb.stderr
 
         # Merge both branches into main
-        git(repo, "merge", "--no-ff", sa["branch"], "-m", "merge threatiq")
-        git(repo, "merge", "--no-ff", sb["branch"], "-m", "merge ui")
-        assert (knowledge / "concepts" / "threat-detector-note.md").exists()
-        assert (knowledge / "concepts" / "ui-layout-decision.md").exists()
+        git(repo, "merge", "--no-ff", sa["branch"], "-m", "merge lumenfield-detector")
+        git(repo, "merge", "--no-ff", sb["branch"], "-m", "merge northstar-console")
+        assert (knowledge / "concepts" / "lumenfield-detector-note.md").exists()
+        assert (knowledge / "concepts" / "northstar-console-layout.md").exists()
 
 
 def test_sample_pack_walks():
