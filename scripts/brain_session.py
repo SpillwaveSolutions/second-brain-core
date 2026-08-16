@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Session isolation for a shared second brain.
 
+Canonical copy: SpillwaveSolutions/second-brain-core/scripts/brain_session.py
+Foundation packs vendor this file. Do not fork the protocol.
+
 Read shared truth from main. Write in a short-lived git worktree + branch.
 Close by committing and optionally opening a PR against whatever remote the
 checkout already has. Never hard-codes a remote URL.

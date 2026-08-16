@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 2026-08-16
+
+- Privacy: isolation tests and docs use only fictional **lumenfield-detector** / **northstar-console** actors.
+- `scripts/brain_session.py` marked as the canonical isolation helper; foundation packs vendor this copy.
+
+
 ## 0.3.0 — 2026-08-15
 
 - Grok Bot onboarding: `docs/ONBOARDING.md` (LLM-wiki history, destination state, public repo list)

@@ -20,7 +20,7 @@ python3 scripts/brain_session.py open \
   --actor grok-bot/content-media \
   --plugin content-media \
   --host grok-bot \
-  --project ui-app
+  --project northstar-console
 
 # JSON includes SECOND_BRAIN_ROOT for this session.
 # All writes go there via *_common.py write --author ...
@@ -51,3 +51,17 @@ No local worktree required. Same branch naming via GitHub. Or mount a box and gi
 ## Public pack surface
 
 This document never names a private remote. `SECOND_BRAIN_ROOT` is a local path the human already has.
+
+
+## Canonical helper
+
+`scripts/brain_session.py` in this repository is the **canonical** isolation helper.
+
+Foundation packs (okf-plugin, PKC, SAC, DEKC, AGER, WikiTicket) vendor a copy. Job packs already ship the same script. Do not fork the protocol:
+
+- branch: `brain/<actor>/<session-id>`
+- read `main`; write only in the session worktree
+- close via commit + PR against the checkout's existing remote
+- never force-push; never invent a remote URL
+
+If the helper changes, bump this pack and re-vendor.
