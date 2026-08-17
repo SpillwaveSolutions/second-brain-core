@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.3 — 2026-08-16
+
+- ContextPack has a **token budget**: default 1/4 of the model window
+  (`SECOND_BRAIN_WINDOW_TOKENS`, default 128000 → 32000 tokens). Override with
+  `--max-tokens` or `SECOND_BRAIN_PACK_MAX_TOKENS`.
+- Pack is **fail-closed** when the rendered subgraph exceeds the budget. Node
+  clip (`--max-nodes`) is not a token budget and does not write a truncated pack.
+- **Bodies off** unless that node is the pack root. Neighbors keep title, type,
+  path, and frontmatter `description` only.
+- Token estimate is chars/4. Success JSON reports `tokens`, `budget`, `window`.
+
 ## 0.3.2 — 2026-08-16
 
 - Codex / Claude PostToolUse hook is **fail-closed**: `sbc-hook-validate.sh` runs `sbc_common.py validate` after `apply_patch` / Write / Edit and exits non-zero on a broken bundle.

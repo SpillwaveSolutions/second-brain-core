@@ -91,8 +91,9 @@ Owned types: Concept, ContextPack, TypedEdge, AgentIdentity, WriteEvent.
 
 ## Progressive disclosure
 
-Default ContextPack: 2 hops. Pack this pack's catalogs only. Pack before
-answering or writing.
+Default ContextPack: 2 hops. Token budget is 1/4 of the model window
+(fail-closed). Bodies off unless that node is the pack root. Pack this
+pack's catalogs only. Pack before answering or writing.
 
 ## Skill binding
 

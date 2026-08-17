@@ -207,6 +207,136 @@ def test_sample_pack_walks():
     data = json.loads(r.stdout)
     assert data.get("ok") is True
     assert len(data.get("nodes") or []) >= 3, data
+    assert data.get("tokens", 0) > 0
+    assert data.get("budget") == 32000
+    assert data.get("window") == 128000
+    text = Path(data["path"]).read_text(encoding="utf-8")
+    assert "Tokens:" in text
+    # Neighbor bodies stay off. Sample identity/contextpack notes must not leak.
+    assert "Fictional generic typed knowledge node" in text  # root body
+    assert "Fictional writer identity" not in text
+    assert "Fictional bounded ranked typed-hop subgraph" not in text
+
+
+def test_pack_default_budget_is_quarter_window():
+    with tempfile.TemporaryDirectory() as td:
+        bundle = Path(td) / "knowledge"
+        run("init-bundle", "--bundle", str(bundle), "--title", "Budget", "--catalogs", "concepts")
+        run(
+            "write",
+            "--bundle",
+            str(bundle),
+            "--type",
+            "Concept",
+            "--title",
+            "Northstar Root",
+            "--author",
+            "grok-bot/northstar-console",
+            "--body",
+            "# Northstar Root\n\nShort root body.\n",
+        )
+        r = run(
+            "pack",
+            "--bundle",
+            str(bundle),
+            "--root",
+            "Northstar Root",
+            env={"SECOND_BRAIN_WINDOW_TOKENS": "400"},
+        )
+        assert r.returncode == 0, r.stdout + r.stderr
+        data = json.loads(r.stdout)
+        assert data["window"] == 400
+        assert data["budget"] == 100
+        assert data["tokens"] <= 100
+
+
+def test_pack_exceeds_token_budget_fails_closed():
+    with tempfile.TemporaryDirectory() as td:
+        bundle = Path(td) / "knowledge"
+        run("init-bundle", "--bundle", str(bundle), "--title", "Over", "--catalogs", "concepts")
+        fat = "# Fat Root\n\n" + ("word " * 400)
+        run(
+            "write",
+            "--bundle",
+            str(bundle),
+            "--type",
+            "Concept",
+            "--title",
+            "Fat Root",
+            "--author",
+            "claude-code/lumenfield-detector",
+            "--body",
+            fat,
+        )
+        out = bundle / "packs" / "should-not-exist.md"
+        r = run(
+            "pack",
+            "--bundle",
+            str(bundle),
+            "--root",
+            "Fat Root",
+            "--max-nodes",
+            "1",
+            "--max-tokens",
+            "20",
+            "--out",
+            str(out),
+        )
+        assert r.returncode != 0, r.stdout + r.stderr
+        data = json.loads(r.stdout)
+        assert data["error"] == "pack exceeds token budget"
+        assert data["tokens"] > data["budget"]
+        assert data["budget"] == 20
+        assert not out.exists()
+
+
+def test_pack_bodies_off_unless_root():
+    with tempfile.TemporaryDirectory() as td:
+        bundle = Path(td) / "knowledge"
+        run("init-bundle", "--bundle", str(bundle), "--title", "Bodies", "--catalogs", "concepts")
+        run(
+            "write",
+            "--bundle",
+            str(bundle),
+            "--type",
+            "Concept",
+            "--title",
+            "Lumenfield Root",
+            "--author",
+            "claude-code/lumenfield-detector",
+            "--body",
+            "# Lumenfield Root\n\nROOT_BODY_MARKER secret-of-root\n",
+        )
+        neighbor = bundle / "concepts" / "neighbor.md"
+        neighbor.write_text(
+            "---\n"
+            "type: Concept\n"
+            "title: Neighbor Note\n"
+            "description: neighbor-frontmatter-only\n"
+            "links:\n"
+            "  - target: /concepts/lumenfield-root.md\n"
+            "    rel: related_to\n"
+            "---\n\n# Neighbor\n\nNEIGHBOR_BODY_MARKER must-not-pack\n",
+            encoding="utf-8",
+        )
+        # Link root -> neighbor so hops=1 includes it
+        root = bundle / "concepts" / "lumenfield-root.md"
+        text = root.read_text(encoding="utf-8")
+        text = text.replace(
+            "---\n\n",
+            "links:\n  - target: /concepts/neighbor.md\n    rel: related_to\n---\n\n",
+            1,
+        )
+        root.write_text(text, encoding="utf-8")
+        r = run("pack", "--bundle", str(bundle), "--root", "Lumenfield Root", "--hops", "1")
+        assert r.returncode == 0, r.stdout + r.stderr
+        data = json.loads(r.stdout)
+        packed = Path(data["path"]).read_text(encoding="utf-8")
+        assert "ROOT_BODY_MARKER" in packed
+        assert "NEIGHBOR_BODY_MARKER" not in packed
+        assert "neighbor-frontmatter-only" in packed
+        assert "Neighbor Note" in packed
+
 
 
 def test_hooks_json_is_fail_closed_post_tool_use():
@@ -284,6 +414,9 @@ if __name__ == "__main__":
     test_init_and_write()
     test_isolation_two_sessions_do_not_clobber()
     test_sample_pack_walks()
+    test_pack_default_budget_is_quarter_window()
+    test_pack_exceeds_token_budget_fails_closed()
+    test_pack_bodies_off_unless_root()
     test_hooks_json_is_fail_closed_post_tool_use()
     test_hook_valid_bundle_exits_zero()
     test_hook_invalid_bundle_exits_nonzero()
