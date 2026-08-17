@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.3.4 — 2026-08-17
 
-- Host manifests (`.claude-plugin/plugin.json`, Claude/Grok marketplace
-  copies) now match root `plugin.json` **0.3.3**. Claude Code was still
-  labeled 0.3.2.
+- **Fleet actor registry.** If the operator `actors.json` lists `actors`,
+  `brain_session.py open` fails closed on an unknown actor. No registry
+  keeps the old behavior.
+- **Type allowlist.** `restrict` maps a type to allowed actors. Pack +
+  operator lists intersect. DailyDigest / WeeklyDigest are CoS-only.
+- Pack roots are packing hints, not access control (`docs/ISOLATION.md`).
+- Sample: `actors.sample.json`. Paths only.
 
 ## 0.3.3 — 2026-08-16
 

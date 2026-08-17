@@ -229,8 +229,14 @@ def cmd_init(args) -> int:
 
 def cmd_write(args) -> int:
     author = resolve_author(getattr(args, "author", "") or None)
-    bundle = resolve_bundle(args.bundle)
     typ = args.type
+    script_dir = Path(__file__).resolve().parent
+    if str(script_dir) not in sys.path:
+        sys.path.insert(0, str(script_dir))
+    from sbc_actors import require_type_allowed  # noqa: WPS433
+
+    require_type_allowed(author, typ, start=Path.cwd(), pack_root=script_dir.parent)
+    bundle = resolve_bundle(args.bundle)
     if typ not in OWNED_TYPES and typ not in {"Index"}:
         # Core allows its own types; job packs override this script.
         pass

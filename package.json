@@ -1,6 +1,6 @@
 {
   "name": "second-brain-core",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "description": "Second Brain Core \u2014 Claude Code / Grok Build / Codex plugin",
   "scripts": {

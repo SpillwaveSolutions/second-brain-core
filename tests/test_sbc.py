@@ -428,6 +428,129 @@ def test_host_manifest_versions_match():
     assert len(set(found.values())) == 1, f"version drift: {found}"
 
 
+def _write_registry(path: Path, data: dict) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
+
+
+def test_session_open_without_registry_still_works():
+    tmp = Path(tempfile.mkdtemp())
+    repo = tmp / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "t@t"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True, capture_output=True)
+    (repo / "knowledge").mkdir()
+    (repo / "knowledge" / "index.md").write_text("# k\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
+    env = os.environ.copy()
+    env.pop("SECOND_BRAIN_ACTORS", None)
+    env["SECOND_BRAIN_HOME"] = str(tmp / "empty-home")
+    r = subprocess.run(
+        [
+            sys.executable,
+            str(SESSION),
+            "open",
+            "--repo",
+            str(repo),
+            "--bundle",
+            "knowledge",
+            "--actor",
+            "grok-bot/northstar-console",
+            "--plugin",
+            "second-brain-core",
+            "--host",
+            "test",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert json.loads(r.stdout)["ok"] is True
+
+
+def test_session_open_unknown_actor_fails_closed():
+    tmp = Path(tempfile.mkdtemp())
+    repo = tmp / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "t@t"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True, capture_output=True)
+    (repo / "knowledge").mkdir()
+    (repo / "knowledge" / "index.md").write_text("# k\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
+    registry = _write_registry(
+        tmp / "actors.json",
+        {"version": 1, "actors": [{"actor": "grok-bot/executive-coordination"}]},
+    )
+    env = os.environ.copy()
+    env["SECOND_BRAIN_ACTORS"] = str(registry)
+    env["SECOND_BRAIN_HOME"] = str(tmp / "empty-home")
+    r = subprocess.run(
+        [
+            sys.executable,
+            str(SESSION),
+            "open",
+            "--repo",
+            str(repo),
+            "--bundle",
+            "knowledge",
+            "--actor",
+            "grok-bot/imposter",
+            "--plugin",
+            "executive-coordination",
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert r.returncode != 0, r.stdout
+    err = json.loads(r.stdout or r.stderr)
+    assert err["error"] == "actor not in registry"
+
+
+def test_dailydigest_is_cos_only():
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import sbc_actors
+
+    tmp = Path(tempfile.mkdtemp())
+    registry = _write_registry(
+        tmp / "actors.json",
+        {
+            "version": 1,
+            "actors": [
+                {"actor": "grok-bot/executive-coordination"},
+                {"actor": "grok-bot/spillwave-cto"},
+            ],
+            "restrict": {
+                "DailyDigest": ["grok-bot/executive-coordination"],
+                "WeeklyDigest": ["grok-bot/executive-coordination"],
+            },
+        },
+    )
+    os.environ["SECOND_BRAIN_ACTORS"] = str(registry)
+    os.environ["SECOND_BRAIN_HOME"] = str(tmp / "empty-home")
+    try:
+        sbc_actors.require_type_allowed(
+            "grok-bot/executive-coordination", "DailyDigest", start=tmp
+        )
+        sbc_actors.require_type_allowed("grok-bot/spillwave-cto", "Decision", start=tmp)
+        try:
+            sbc_actors.require_type_allowed(
+                "grok-bot/spillwave-cto", "DailyDigest", start=tmp
+            )
+            raise AssertionError("CTO DailyDigest must fail closed")
+        except SystemExit as exc:
+            assert exc.code == 1
+    finally:
+        os.environ.pop("SECOND_BRAIN_ACTORS", None)
+        os.environ.pop("SECOND_BRAIN_HOME", None)
+
+
 if __name__ == "__main__":
     test_sample_validates()
     test_write_requires_author()
@@ -443,4 +566,7 @@ if __name__ == "__main__":
     test_hook_not_a_bundle_is_silent_ok()
     test_hook_apply_patch_payload()
     test_host_manifest_versions_match()
+    test_session_open_without_registry_still_works()
+    test_session_open_unknown_actor_fails_closed()
+    test_dailydigest_is_cos_only()
     print("ok")
