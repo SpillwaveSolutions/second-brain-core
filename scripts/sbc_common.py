@@ -25,6 +25,10 @@ OWNED_TYPES = {
     "WriteEvent": "write-events",
 }
 
+DEFAULT_WINDOW_TOKENS = 128_000
+PACK_BUDGET_DENOMINATOR = 4
+
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -302,6 +306,59 @@ def cmd_validate(args) -> int:
     return 0 if result["ok"] else 1
 
 
+def estimate_tokens(text: str) -> int:
+    """Cheap chars/4 estimator. Not a model tokenizer."""
+    if not text:
+        return 0
+    return (len(text) + 3) // 4
+
+
+def resolve_pack_budget(args) -> tuple[int, int]:
+    """Return (window, budget). Budget is 1/4 window unless overridden.
+
+    Node clip (--max-nodes) is not a token budget.
+    """
+    raw_window = getattr(args, "window_tokens", "") or os.environ.get("SECOND_BRAIN_WINDOW_TOKENS") or ""
+    window = int(raw_window) if str(raw_window).strip() else DEFAULT_WINDOW_TOKENS
+    if window < 1:
+        print(json.dumps({"error": "window tokens must be >= 1"}))
+        raise SystemExit(1)
+    raw_budget = getattr(args, "max_tokens", "") or os.environ.get("SECOND_BRAIN_PACK_MAX_TOKENS") or ""
+    budget = int(raw_budget) if str(raw_budget).strip() else max(1, window // PACK_BUDGET_DENOMINATOR)
+    if budget < 1:
+        print(json.dumps({"error": "max tokens must be >= 1"}))
+        raise SystemExit(1)
+    return window, budget
+
+
+def render_context_pack(root: str, included: list[str], concepts: dict, hops: int, tokens: int, budget: int) -> str:
+    """Bodies off unless that node is the pack root."""
+    lines = [
+        f"# Context pack: {concepts[root]['meta'].get('title', root)}",
+        "",
+        (
+            f"Hops: {hops} | Nodes: {len(included)} | "
+            f"Tokens: {tokens}/{budget} | Generated: {now_iso()}"
+        ),
+        "",
+    ]
+    for p in included:
+        c = concepts[p]
+        lines.append(f"## {c['meta'].get('title')} (`{c['meta'].get('type')}`)")
+        lines.append(f"Path: `{p}`")
+        if p == root:
+            body = (c.get("body") or "").strip()
+            if body:
+                lines.append("")
+                lines.append(body)
+        else:
+            desc = c["meta"].get("description")
+            if desc:
+                lines.append(str(desc))
+        lines.append("")
+    return "\n".join(lines)
+
+
 def cmd_pack(args) -> int:
     bundle = Path(args.bundle or os.environ.get("SECOND_BRAIN_ROOT") or "knowledge")
     overlay = Path(args.overlay) if getattr(args, "overlay", "") else None
@@ -321,6 +378,7 @@ def cmd_pack(args) -> int:
         root = matches[0]
     hops = int(args.hops)
     max_nodes = int(args.max_nodes)
+    window, budget = resolve_pack_budget(args)
 
     def neighbors(path: str):
         c = concepts.get(path)
@@ -350,23 +408,41 @@ def cmd_pack(args) -> int:
                 if n not in seen:
                     frontier.append((n, d + 1))
 
-    lines = [
-        f"# Context pack: {concepts[root]['meta'].get('title', root)}",
-        "",
-        f"Hops: {hops} | Nodes: {len(included)} | Generated: {now_iso()}",
-        "",
-    ]
-    for p in included:
-        c = concepts[p]
-        lines.append(f"## {c['meta'].get('title')} (`{c['meta'].get('type')}`)")
-        lines.append(f"Path: `{p}`")
-        desc = c["meta"].get("description") or c["body"].strip().split("\n")[0][:240]
-        lines.append(desc)
-        lines.append("")
+    # First pass: render with placeholder token line, then re-render with the count.
+    draft = render_context_pack(root, included, concepts, hops, 0, budget)
+    tokens = estimate_tokens(draft)
+    text = render_context_pack(root, included, concepts, hops, tokens, budget)
+    tokens = estimate_tokens(text)
+    if tokens > budget:
+        print(
+            json.dumps(
+                {
+                    "error": "pack exceeds token budget",
+                    "tokens": tokens,
+                    "budget": budget,
+                    "window": window,
+                    "nodes": included,
+                    "hint": "narrow --hops / --root; node clip is not a token budget",
+                }
+            )
+        )
+        return 1
     out = Path(args.out) if args.out else bundle / "packs" / f"{slugify(concepts[root]['meta'].get('title', 'pack'))}-pack.md"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text("\n".join(lines), encoding="utf-8")
-    print(json.dumps({"ok": True, "path": str(out), "nodes": included, "overlay": str(overlay) if overlay else None}))
+    out.write_text(text, encoding="utf-8")
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "path": str(out),
+                "nodes": included,
+                "tokens": tokens,
+                "budget": budget,
+                "window": window,
+                "overlay": str(overlay) if overlay else None,
+            }
+        )
+    )
     return 0
 
 
@@ -400,6 +476,8 @@ def main():
     k.add_argument("--root", required=True)
     k.add_argument("--hops", default="2")
     k.add_argument("--max-nodes", default="20")
+    k.add_argument("--max-tokens", default="")
+    k.add_argument("--window-tokens", default="")
     k.add_argument("--out", default="")
     k.add_argument("--overlay", default="")
 
