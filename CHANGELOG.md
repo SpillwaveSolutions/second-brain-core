@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Host manifests (`.claude-plugin/plugin.json`, Claude/Grok marketplace
+  copies) now match root `plugin.json` **0.3.3**. Claude Code was still
+  labeled 0.3.2.
+
 ## 0.3.3 — 2026-08-16
 
 - ContextPack has a **token budget**: default 1/4 of the model window
