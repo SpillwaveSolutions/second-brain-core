@@ -408,6 +408,26 @@ def test_hook_apply_patch_payload():
     assert "validating bundle at" in r.stdout
 
 
+def test_host_manifest_versions_match():
+    root_ver = json.loads((ROOT / "plugin.json").read_text())["version"]
+    found = {"plugin.json": root_ver}
+    for rel, path in (
+        (".claude-plugin/plugin.json", ("version",)),
+        (".claude-plugin/marketplace.json", ("plugins", 0, "version")),
+        (".grok-plugin/marketplace.json", ("plugins", 0, "version")),
+        ("marketplace.json", ("plugins", 0, "version")),
+        ("package.json", ("version",)),
+    ):
+        f = ROOT / rel
+        if not f.exists():
+            continue
+        node = json.loads(f.read_text())
+        for key in path:
+            node = node[key]
+        found[rel] = node
+    assert len(set(found.values())) == 1, f"version drift: {found}"
+
+
 if __name__ == "__main__":
     test_sample_validates()
     test_write_requires_author()
@@ -422,4 +442,5 @@ if __name__ == "__main__":
     test_hook_invalid_bundle_exits_nonzero()
     test_hook_not_a_bundle_is_silent_ok()
     test_hook_apply_patch_payload()
+    test_host_manifest_versions_match()
     print("ok")
