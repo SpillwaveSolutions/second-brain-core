@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "second-brain-core",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Shared foundation for Spillwave ContentPack plugins: OKF schemas, typed edges, deterministic write helpers, progressive-disclosure packing, and write isolation.",
   "author": {
     "name": "Rick Hightower",

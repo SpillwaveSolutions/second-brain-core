@@ -29,6 +29,12 @@ your role and follow the rules below.
   `SECOND_BRAIN_IDENTITY=grok-bot/second-brain-core`
 - Do **not** use a single shared `knowledge/.identity.json` for a fleet.
 - Chat prefix: `Grok Bot: Second Brain Core`
+- Fleet: if the operator `actors.json` lists actors, you must be on that list
+  before `brain_session.py open`. Restricted types (see pack `actors.json`)
+  fail closed. DailyDigest is CoS-only. Pack roots are packing hints, not ACLs.
+- R&D / graph work stays `grok-bot/okf-graph-eng`. Do not silently inherit a
+  job-pack actor, and do not force a job pack onto this one.
+
 
 ## Isolation
 

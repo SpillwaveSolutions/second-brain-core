@@ -132,6 +132,12 @@ def cmd_open(args) -> int:
     if not actor:
         print(json.dumps({"error": "claim an identity first (--actor or SECOND_BRAIN_IDENTITY)"}))
         return 1
+    script_dir = Path(__file__).resolve().parent
+    if str(script_dir) not in sys.path:
+        sys.path.insert(0, str(script_dir))
+    from sbc_actors import require_registered_actor  # noqa: WPS433
+
+    require_registered_actor(actor, start=repo)
     bundle_in = Path(args.bundle) if args.bundle else Path(os.environ.get("SECOND_BRAIN_ROOT", "knowledge"))
     if not bundle_in.is_absolute():
         cand = (repo / bundle_in).resolve()

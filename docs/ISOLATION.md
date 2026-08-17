@@ -2,7 +2,25 @@
 
 One private second brain. Many agents. Many machines. Many project worktrees.
 
-Type ownership says *what* you may write. Isolation says *where concurrent sessions do not collide*.
+Type ownership says *what* a pack may write. Isolation says *where concurrent sessions do not collide*. A fleet actor registry (when present) says *who* may open a session. A type allowlist (when present) says *which actor* may write a restricted type.
+
+## Actor registry
+
+If the operator provides `actors.json` (`SECOND_BRAIN_ACTORS`, `$SECOND_BRAIN_HOME/actors.json`, or `actors.json` walking up from the repo) **and** that file lists `actors`, `brain_session.py open` fails closed on an unknown actor.
+
+No registry file (or a restrict-only file) keeps the old behavior: any claimed identity may open.
+
+See `actors.sample.json`. Paths only. Never put a remote in the registry.
+
+## Type allowlist
+
+`restrict` maps a type to the actors who may write it. Pack-shipped `actors.json` and the operator file merge by **intersection**. First required rule (executive-coordination): `DailyDigest` / `WeeklyDigest` are CoS-only (`grok-bot/executive-coordination`). A CTO actor on the same pack is denied.
+
+## Pack roots are not access control
+
+`--root /clients/<slug>.md` and “pack from this client” are **ContextPack scope**. They do not stop a write to another client’s node. Four account-management actors with different default roots can still write each other’s files until a later client-scope check exists. Isolation prevents branch clobber, not same-path overlap. Review still has to catch two sessions writing the same concept.
+
+## Protocol
 
 ## Protocol
 

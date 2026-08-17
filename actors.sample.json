@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "actors": [
+    {
+      "actor": "grok-bot/executive-coordination",
+      "plugin": "executive-coordination"
+    },
+    {
+      "actor": "grok-bot/spillwave-cto",
+      "plugin": "executive-coordination"
+    },
+    {
+      "actor": "grok-bot/okf-graph-eng",
+      "plugin": "okf-graph-eng"
+    },
+    {
+      "actor": "grok-bot/northstar-console",
+      "plugin": "project-knowledge-capture"
+    },
+    {
+      "actor": "claude-code/lumenfield-detector",
+      "plugin": "project-knowledge-capture"
+    }
+  ],
+  "restrict": {
+    "DailyDigest": ["grok-bot/executive-coordination"],
+    "WeeklyDigest": ["grok-bot/executive-coordination"]
+  }
+}
