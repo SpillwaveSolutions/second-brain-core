@@ -412,6 +412,7 @@ def test_host_manifest_versions_match():
     root_ver = json.loads((ROOT / "plugin.json").read_text())["version"]
     found = {"plugin.json": root_ver}
     for rel, path in (
+        (".cursor-plugin/plugin.json", ("version",)),
         (".claude-plugin/plugin.json", ("version",)),
         (".claude-plugin/marketplace.json", ("plugins", 0, "version")),
         (".grok-plugin/marketplace.json", ("plugins", 0, "version")),

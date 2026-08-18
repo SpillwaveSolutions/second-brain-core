@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.5 — 2026-08-17
+
+- **Cursor host.** `.cursor-plugin/plugin.json` (Cursor Plugins) plus `.cursor/rules/second-brain.mdc`. Docs: `docs/CURSOR.md`. `docs/GROK_BOT.md` now covers Grok Bot spawning Cursor cloud agents.
+
 ## 0.3.4 — 2026-08-17
 
 - **Fleet actor registry.** If the operator `actors.json` lists `actors`,
