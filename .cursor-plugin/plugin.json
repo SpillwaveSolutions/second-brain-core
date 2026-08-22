@@ -1,6 +1,6 @@
 {
   "name": "second-brain-core",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Shared foundation for Spillwave ContentPack plugins: OKF schemas, typed edges, deterministic write helpers, progressive-disclosure packing, and write isolation.",
   "author": {
     "name": "Rick Hightower"
@@ -18,7 +18,9 @@
     "grok-build",
     "codex",
     "deep-agents",
-    "cursor"
+    "cursor",
+    "worklog",
+    "wiki-ticket-sdd"
   ],
   "skills": "skills/",
   "rules": ".cursor/rules/",
