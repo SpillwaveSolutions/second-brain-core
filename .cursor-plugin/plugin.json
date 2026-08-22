@@ -1,6 +1,6 @@
 {
   "name": "second-brain-core",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Shared foundation for Spillwave ContentPack plugins: OKF schemas, typed edges, deterministic write helpers, progressive-disclosure packing, and write isolation.",
   "author": {
     "name": "Rick Hightower"
