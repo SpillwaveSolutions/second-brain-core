@@ -338,6 +338,127 @@ def test_pack_bodies_off_unless_root():
         assert "Neighbor Note" in packed
 
 
+def _linked_chain(bundle: Path, count: int) -> None:
+    """Write count Concept nodes, each linking to the next."""
+    for i in range(count):
+        links = ""
+        if i + 1 < count:
+            links = (
+                "links:\n"
+                f"  - target: /concepts/node-{i + 1:02d}.md\n"
+                "    rel: related_to\n"
+            )
+        dest = bundle / "concepts" / f"node-{i:02d}.md"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(
+            "---\n"
+            "type: Concept\n"
+            f"title: Node {i:02d}\n"
+            f"description: lead-{i:02d}\n"
+            f"{links}"
+            "---\n\n"
+            f"# Node {i:02d}\n\n"
+            f"BODY_MARKER_{i:02d} must-not-leak-in-summary\n",
+            encoding="utf-8",
+        )
+
+
+def test_pack_tiny_caps_hops_and_nodes():
+    with tempfile.TemporaryDirectory() as td:
+        bundle = Path(td) / "knowledge"
+        run("init-bundle", "--bundle", str(bundle), "--title", "Tiny", "--catalogs", "concepts")
+        _linked_chain(bundle, 12)
+        r = run("pack", "--bundle", str(bundle), "--root", "Node 00", "--tiny")
+        assert r.returncode == 0, r.stdout + r.stderr
+        data = json.loads(r.stdout)
+        assert data["ok"] is True
+        assert data["tiny"] is True
+        assert data["hops"] == 1
+        assert len(data["nodes"]) <= 8
+        # hops=1 from node-00 only includes itself and node-01
+        assert data["nodes"][0].endswith("/node-00.md")
+        assert any(n.endswith("/node-01.md") for n in data["nodes"])
+        assert not any(n.endswith("/node-02.md") for n in data["nodes"])
+
+
+def test_pack_summary_is_compact_and_bodies_off():
+    with tempfile.TemporaryDirectory() as td:
+        bundle = Path(td) / "knowledge"
+        run("init-bundle", "--bundle", str(bundle), "--title", "Summary", "--catalogs", "concepts")
+        _linked_chain(bundle, 3)
+        default_out = bundle / "packs" / "node-00-pack.md"
+        r = run(
+            "pack",
+            "--bundle",
+            str(bundle),
+            "--root",
+            "Node 00",
+            "--tiny",
+            "--summary",
+        )
+        assert r.returncode == 0, r.stdout + r.stderr
+        text = r.stdout
+        assert text.startswith("## Pack summary")
+        assert "Pack: hops=1 nodes=" in text
+        assert "Lead nodes:" in text
+        assert "Node 00" in text
+        assert "lead-00" in text
+        assert "BODY_MARKER_00" not in text
+        assert "BODY_MARKER_01" not in text
+        assert not default_out.exists()
+        # stdout is markdown, not the usual JSON payload
+        assert not r.stdout.lstrip().startswith("{")
+
+
+def test_pack_summary_writes_only_when_out_set():
+    with tempfile.TemporaryDirectory() as td:
+        bundle = Path(td) / "knowledge"
+        run("init-bundle", "--bundle", str(bundle), "--title", "Out", "--catalogs", "concepts")
+        _linked_chain(bundle, 2)
+        out = bundle / "packs" / "card.md"
+        r = run(
+            "pack",
+            "--bundle",
+            str(bundle),
+            "--root",
+            "Node 00",
+            "--summary",
+            "--out",
+            str(out),
+        )
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert out.exists()
+        written = out.read_text(encoding="utf-8")
+        assert written.startswith("## Pack summary")
+        assert "BODY_MARKER" not in written
+        assert r.stdout.startswith("## Pack summary")
+
+
+def test_pack_summary_exceeds_token_budget_fails_closed():
+    with tempfile.TemporaryDirectory() as td:
+        bundle = Path(td) / "knowledge"
+        run("init-bundle", "--bundle", str(bundle), "--title", "OverSum", "--catalogs", "concepts")
+        _linked_chain(bundle, 2)
+        out = bundle / "packs" / "should-not-exist-summary.md"
+        r = run(
+            "pack",
+            "--bundle",
+            str(bundle),
+            "--root",
+            "Node 00",
+            "--summary",
+            "--max-tokens",
+            "5",
+            "--out",
+            str(out),
+        )
+        assert r.returncode != 0, r.stdout + r.stderr
+        data = json.loads(r.stdout)
+        assert data["error"] == "pack exceeds token budget"
+        assert data["tokens"] > data["budget"]
+        assert data["budget"] == 5
+        assert not out.exists()
+
 
 def test_hooks_json_is_fail_closed_post_tool_use():
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
@@ -561,6 +682,10 @@ if __name__ == "__main__":
     test_pack_default_budget_is_quarter_window()
     test_pack_exceeds_token_budget_fails_closed()
     test_pack_bodies_off_unless_root()
+    test_pack_tiny_caps_hops_and_nodes()
+    test_pack_summary_is_compact_and_bodies_off()
+    test_pack_summary_writes_only_when_out_set()
+    test_pack_summary_exceeds_token_budget_fails_closed()
     test_hooks_json_is_fail_closed_post_tool_use()
     test_hook_valid_bundle_exits_zero()
     test_hook_invalid_bundle_exits_nonzero()

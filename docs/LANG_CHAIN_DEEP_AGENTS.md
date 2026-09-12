@@ -75,10 +75,11 @@ Wrap the scripts as tools or shell. The model proposes. The scripts commit.
 
 ## Progressive disclosure
 
-Startup sees skill frontmatter only. Pack (2 hops) before answering or writing.
+Startup sees skill frontmatter only. Pack (2 hops) before writing. For Q&A,
+spawn a retrieval child (`docs/RETRIEVAL.md`).
 
 ## Related
 
 - Agent Skills spec
 - Agent Plugins 1.0
-- second-brain-core docs/ISOLATION.md, docs/GROK_BOT.md
+- second-brain-core docs/ISOLATION.md, docs/GROK_BOT.md, docs/RETRIEVAL.md

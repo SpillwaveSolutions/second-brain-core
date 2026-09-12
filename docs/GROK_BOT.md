@@ -99,7 +99,10 @@ Owned types: Concept, ContextPack, TypedEdge, AgentIdentity, WriteEvent.
 
 Default ContextPack: 2 hops. Token budget is 1/4 of the model window
 (fail-closed). Bodies off unless that node is the pack root. Pack this
-pack's catalogs only. Pack before answering or writing.
+pack's catalogs only. Pack before writing.
+
+For Q&A, spawn a retriever child. Do not run search or pack inline in
+the parent. See [RETRIEVAL.md](RETRIEVAL.md).
 
 ## Skill binding
 
@@ -146,5 +149,6 @@ Foundation:
 - [project-knowledge-capture](https://github.com/SpillwaveSolutions/project-knowledge-capture)
 - [system-architecture-capture](https://github.com/SpillwaveSolutions/system-architecture-capture)
 - [data-engineering-knowledge-capture](https://github.com/SpillwaveSolutions/data-engineering-knowledge-capture)
+- [research-knowledge-capture](https://github.com/SpillwaveSolutions/research-knowledge-capture)
 - [wiki_ticket_sdd](https://github.com/SpillwaveSolutions/wiki_ticket_sdd)
 - [okf-agent-graph](https://github.com/SpillwaveSolutions/okf-agent-graph)

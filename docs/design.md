@@ -9,9 +9,10 @@ Session memory evaporates. This plugin gives one job function a typed, git-nativ
 1. Git-native Markdown + YAML
 2. Deterministic write boundary
 3. Progressive disclosure via ContextPacks
-4. No hard-coded real-world client names in samples
-5. Multi-host plugin packaging (Claude Code, Grok Build, Codex, Agent Plugins 1.0, Grok Bot, LangChain Deep Agents)
-6. Write isolation: read main, write in a session worktree, close as a PR. Type ownership says *what*. Isolation says *where*.
+4. Query-time retrieval isolation: parent spawns a child for Q&A (`docs/RETRIEVAL.md`)
+5. No hard-coded real-world client names in samples
+6. Multi-host plugin packaging (Claude Code, Grok Build, Codex, Agent Plugins 1.0, Grok Bot, LangChain Deep Agents)
+7. Write isolation: read main, write in a session worktree, close as a PR. Type ownership says *what*. Isolation says *where*.
 
 ## Nouns
 

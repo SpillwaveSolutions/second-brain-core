@@ -12,7 +12,8 @@ Use this plugin when the user is working on any type listed in README.md / `sche
 2. Check `schemas/okf-concepts/` for required fields.
 3. Call `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/sbc_common.py write ...`
 4. Link with typed `rel` values from `docs/typed-edges.md`.
-5. Offer `/sbc-pack` if the user needs a session-sized subgraph.
+5. For Q&A, offer `/sbc-retrieve` (child Task; see `docs/RETRIEVAL.md`).
+   Offer `/sbc-pack` when the author needs a session-sized subgraph to write.
 
 ## Do not
 

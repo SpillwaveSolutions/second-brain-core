@@ -41,7 +41,8 @@ vendored there. It does **not** see your local Claude or Grok plugin cache.
 Do this:
 
 1. Claim identity (`SECOND_BRAIN_IDENTITY` or `--author`).
-2. Pack first (2 hops). Do not dump the tree.
+2. Pack first before a write (2 hops). For Q&A, spawn a retrieval child
+   (`docs/RETRIEVAL.md`). Do not dump the tree.
 3. Write only through the pack script. No raw Markdown into `knowledge/`.
 4. Isolate: `brain_session.py open` → write → `close` (PR).
 5. Never invent a private remote.
@@ -67,5 +68,6 @@ Same owned types as [GROK_BOT.md](GROK_BOT.md). Same privacy fence.
 
 - [GROK_BOT.md](GROK_BOT.md) — Grok Bot binding (now includes Cursor)
 - [ISOLATION.md](ISOLATION.md) — worktree + PR
+- [RETRIEVAL.md](RETRIEVAL.md) — query-time child spawn
 - [https://cursor.com/docs/plugins](https://cursor.com/docs/plugins)
 - [https://agent-plugins.org](https://agent-plugins.org)

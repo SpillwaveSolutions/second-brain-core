@@ -24,6 +24,7 @@ Point the plugin at a shared knowledge root (default `knowledge/`). All sibling 
 | `/sbc-init` | Scaffold the catalogs this plugin owns |
 | `/sbc-capture` | Capture a noun into the shared second brain (deterministic write) |
 | `/sbc-pack` | Build a bounded ContextPack from a root concept |
+| `/sbc-retrieve` | Spawn a retrieval child for Q&A so pack stays off the parent |
 | `/sbc-validate` | Validate frontmatter, types, and links |
 | `/sbc-session` | Open or close an isolated write session (worktree + PR) |
 | `/sbc-doctor` | Health check of the bundle this plugin owns |
@@ -93,6 +94,7 @@ This plugin is the shared substrate. Domain plugins (sales-pipeline, content-med
 - [project-knowledge-capture](https://github.com/SpillwaveSolutions/project-knowledge-capture) — Project Knowledge Capture. The why second brain.
 - [system-architecture-capture](https://github.com/SpillwaveSolutions/system-architecture-capture) — System Architecture Capture. The what-is-running second brain.
 - [data-engineering-knowledge-capture](https://github.com/SpillwaveSolutions/data-engineering-knowledge-capture) — Data Engineering Knowledge Capture. The data-plane second brain.
+- [research-knowledge-capture](https://github.com/SpillwaveSolutions/research-knowledge-capture) — Research Knowledge Capture. The research second brain.
 - [wiki_ticket_sdd](https://github.com/SpillwaveSolutions/wiki_ticket_sdd) — WikiTicket SDD. Visible work log. Append-only ULID JSONL plus fold.
 - [okf-agent-graph](https://github.com/SpillwaveSolutions/okf-agent-graph) — AGER. Orchestrator / Doer / Judge / Synthesizer.
 
@@ -115,7 +117,7 @@ Works with Claude Code, Grok Build, Codex, Cursor, Agent Plugins 1.0 clients, Gr
 | Cursor | [docs/CURSOR.md](docs/CURSOR.md) — `.cursor-plugin` + Agent Plugins 1.0 |
 | LangChain Deep Agents | [docs/LANG_CHAIN_DEEP_AGENTS.md](docs/LANG_CHAIN_DEEP_AGENTS.md) |
 
-Write isolation (worktree + PR) lives in second-brain-core: [docs/ISOLATION.md](https://github.com/SpillwaveSolutions/second-brain-core/blob/main/docs/ISOLATION.md). Point `SECOND_BRAIN_ROOT` at the session bundle. Never hard-code a private remote.
+Write isolation (worktree + PR) lives in second-brain-core: [docs/ISOLATION.md](https://github.com/SpillwaveSolutions/second-brain-core/blob/main/docs/ISOLATION.md). Query-time retrieval isolation: [docs/RETRIEVAL.md](docs/RETRIEVAL.md). Point `SECOND_BRAIN_ROOT` at the session bundle. Never hard-code a private remote.
 
 Eight job-function plugins plus core. Knowledge root is always a local path or env the human already owns.
 
