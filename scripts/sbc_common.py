@@ -50,7 +50,12 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     if len(parts) < 3:
         return {}, text
     if yaml:
-        return yaml.safe_load(parts[1]) or {}, parts[2].lstrip("\n")
+        try:
+            return yaml.safe_load(parts[1]) or {}, parts[2].lstrip("\n")
+        except yaml.YAMLError:
+            # Common author strings contain a colon ("Grok Bot: Second Brain Core").
+            # Fall back so validate/pack still work when PyYAML is installed.
+            pass
     return _parse_frontmatter_naive(parts[1]), parts[2].lstrip("\n")
 
 

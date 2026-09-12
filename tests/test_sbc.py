@@ -58,6 +58,27 @@ def git(cwd, *args):
     )
 
 
+def test_colon_author_parses_when_yaml_installed():
+    """Sample-style authors contain a colon. PyYAML rejects that unless we fall back."""
+    with tempfile.TemporaryDirectory() as td:
+        bundle = Path(td) / "knowledge"
+        run("init-bundle", "--bundle", str(bundle), "--title", "Colon", "--catalogs", "concepts")
+        dest = bundle / "concepts" / "colon-author.md"
+        dest.write_text(
+            "---\n"
+            "type: Concept\n"
+            "title: Colon Author\n"
+            "author: Grok Bot: Second Brain Core\n"
+            "---\n\n# Colon Author\n",
+            encoding="utf-8",
+        )
+        r = run("validate", "--bundle", str(bundle))
+        assert r.returncode == 0, r.stdout + r.stderr
+        r = run("pack", "--bundle", str(bundle), "--root", "Colon Author", "--summary")
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert "## Pack summary" in r.stdout
+
+
 def test_sample_validates():
     r = run("validate", "--bundle", str(SAMPLE))
     assert r.returncode == 0, r.stdout + r.stderr
@@ -80,6 +101,7 @@ def test_write_requires_author():
             "concepts",
             "--title",
             "No Author",
+            env={"SECOND_BRAIN_IDENTITY": ""},
         )
         assert r.returncode != 0
         assert "identity" in r.stdout.lower() or "identity" in r.stderr.lower()
@@ -674,6 +696,7 @@ def test_dailydigest_is_cos_only():
 
 
 if __name__ == "__main__":
+    test_colon_author_parses_when_yaml_installed()
     test_sample_validates()
     test_write_requires_author()
     test_init_and_write()
