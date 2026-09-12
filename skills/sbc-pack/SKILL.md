@@ -15,7 +15,11 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sbc_common.py" pack \
   --max-nodes 20
 ```
 
-Use `--hops 1` for a tiny pack. Outbound edges only. Do not dump the whole tree.
+Use `--tiny` (1 hop, 8 nodes) for a chat probe. `--summary` prints compact
+markdown with bodies off. For Q&A, do not run this skill in the parent.
+Spawn `/sbc-retrieve` instead (`docs/RETRIEVAL.md`).
+
+Outbound edges only. Do not dump the whole tree.
 
 **Token budget.** Default is 1/4 of `SECOND_BRAIN_WINDOW_TOKENS` (128000 → 32000).
 Override with `--max-tokens` or `SECOND_BRAIN_PACK_MAX_TOKENS`. If the rendered

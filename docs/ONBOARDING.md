@@ -68,7 +68,9 @@ They need better disclosure and a durable, reviewable place to write.
 2. **Identity.** Claim `grok-bot/second-brain-core` via `--author` or
    `SECOND_BRAIN_IDENTITY`. Chat prefix: `Grok Bot: Second Brain Core`.
 3. **Progressive disclosure.** Default ContextPack is 2 hops. Pack
-   before answering or writing.
+   before writing. For Q&A, spawn a retriever child
+   (`docs/RETRIEVAL.md`). A pack still lands in the parent if you run
+   it inline.
 4. **Isolation.** Multiple writers share one private remote. Open a
    session worktree (`scripts/brain_session.py open`) before writing.
    Close it to PR. Never force-push. Never invent a remote URL.
@@ -87,7 +89,8 @@ See `docs/GROK_BOT.md` for the binding contract and
 
 1. State your identity: `Grok Bot: Second Brain Core`.
 2. Confirm the knowledge root (`SECOND_BRAIN_ROOT`).
-3. Pack the relevant subgraph (2 hops) before answering or writing.
+3. For Q&A, spawn a retriever child (`docs/RETRIEVAL.md`). For a write,
+   pack 2 hops first.
 4. Persist only through `scripts/sbc_common.py write --author`.
 5. Report path + commit SHA, not a dumped graph.
 
@@ -117,6 +120,7 @@ GitHub. This file never names it.
 - [project-knowledge-capture](https://github.com/SpillwaveSolutions/project-knowledge-capture) — Project Knowledge Capture. The why second brain.
 - [system-architecture-capture](https://github.com/SpillwaveSolutions/system-architecture-capture) — System Architecture Capture. The what-is-running second brain.
 - [data-engineering-knowledge-capture](https://github.com/SpillwaveSolutions/data-engineering-knowledge-capture) — Data Engineering Knowledge Capture. The data-plane second brain.
+- [research-knowledge-capture](https://github.com/SpillwaveSolutions/research-knowledge-capture) — Research Knowledge Capture. The research second brain.
 - [wiki_ticket_sdd](https://github.com/SpillwaveSolutions/wiki_ticket_sdd) — WikiTicket SDD. Visible work log. Append-only ULID JSONL plus fold.
 - [okf-agent-graph](https://github.com/SpillwaveSolutions/okf-agent-graph) — AGER. Orchestrator / Doer / Judge / Synthesizer.
 

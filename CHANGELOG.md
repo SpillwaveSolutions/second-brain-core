@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.8
+
+- Query-time retrieval contract: `docs/RETRIEVAL.md` plus parent skill
+  `/sbc-retrieve`. Parent spawns a child for Q&A; search and pack stay
+  off the parent context.
+- `sbc_common.py pack --tiny --summary`: 1 hop / 8 nodes, compact
+  card-friendly stdout, bodies off, fail-closed token budget.
+- Foundation retrievers stay in PKC / SAC / DEKC / RKC. Core does not
+  absorb those agents.
+
+
 ## 0.3.7
 
 - WikiTicket SDD (worklog) is the tracking system for this plugin.

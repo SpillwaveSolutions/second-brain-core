@@ -5,6 +5,7 @@ This repository is a dual-host agent plugin (Claude Code + Grok Build + Codex).
 ## Rules
 
 - Read `docs/ONBOARDING.md` before writing. Grok Bot agents start there.
+- For Q&A retrieval, spawn a child (`docs/RETRIEVAL.md`). Do not run search or pack inline in the parent.
 - Write only the noun types listed in README.md.
 - Use absolute in-bundle paths for links (`/clients/acme.md`).
 - Deterministic writes go through `scripts/sbc_common.py`.

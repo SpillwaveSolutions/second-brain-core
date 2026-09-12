@@ -2,7 +2,7 @@
 
 One private second brain. Many agents. Many machines. Many project worktrees.
 
-Type ownership says *what* a pack may write. Isolation says *where concurrent sessions do not collide*. A fleet actor registry (when present) says *who* may open a session. A type allowlist (when present) says *which actor* may write a restricted type.
+Type ownership says *what* a pack may write. Isolation says *where concurrent sessions do not collide*. Query-time read isolation (parent must spawn a retriever child) lives in `docs/RETRIEVAL.md`. A fleet actor registry (when present) says *who* may open a session. A type allowlist (when present) says *which actor* may write a restricted type.
 
 ## Actor registry
 

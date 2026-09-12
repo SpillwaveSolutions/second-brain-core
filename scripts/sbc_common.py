@@ -27,6 +27,9 @@ OWNED_TYPES = {
 
 DEFAULT_WINDOW_TOKENS = 128_000
 PACK_BUDGET_DENOMINATOR = 4
+TINY_HOPS = 1
+TINY_MAX_NODES = 8
+LEAD_MAX = 8
 
 
 
@@ -47,7 +50,12 @@ def parse_frontmatter(text: str) -> tuple[dict, str]:
     if len(parts) < 3:
         return {}, text
     if yaml:
-        return yaml.safe_load(parts[1]) or {}, parts[2].lstrip("\n")
+        try:
+            return yaml.safe_load(parts[1]) or {}, parts[2].lstrip("\n")
+        except yaml.YAMLError:
+            # Common author strings contain a colon ("Grok Bot: Second Brain Core").
+            # Fall back so validate/pack still work when PyYAML is installed.
+            pass
     return _parse_frontmatter_naive(parts[1]), parts[2].lstrip("\n")
 
 
@@ -337,6 +345,45 @@ def resolve_pack_budget(args) -> tuple[int, int]:
     return window, budget
 
 
+def _one_line(text: object) -> str:
+    return " ".join(str(text or "").split())
+
+
+def render_pack_summary(
+    root: str,
+    included: list[str],
+    concepts: dict,
+    hops: int,
+    tokens: int,
+    budget: int,
+) -> str:
+    """Compact card-friendly markdown. Bodies off for every node."""
+    seed = concepts[root]
+    seed_type = seed["meta"].get("type") or "Concept"
+    seed_title = seed["meta"].get("title") or root
+    lines = [
+        "## Pack summary",
+        f"- Seed: `{root}` (`{seed_type}`) - {seed_title}",
+        (
+            f"- Pack: hops={hops} nodes={len(included)} "
+            f"tokens={tokens}/{budget}"
+        ),
+        "- Lead nodes:",
+    ]
+    leads = included[:LEAD_MAX]
+    if not leads:
+        lines.append("  - none")
+    else:
+        for path in leads:
+            c = concepts[path]
+            title = c["meta"].get("title") or path
+            typ = c["meta"].get("type") or "Concept"
+            why = _one_line(c["meta"].get("description")) or typ
+            lines.append(f"  - {title} · {typ} · `{path}` · {why}")
+    lines.append("")
+    return "\n".join(lines)
+
+
 def render_context_pack(root: str, included: list[str], concepts: dict, hops: int, tokens: int, budget: int) -> str:
     """Bodies off unless that node is the pack root."""
     lines = [
@@ -382,8 +429,14 @@ def cmd_pack(args) -> int:
             print(json.dumps({"error": f"root not found: {root}"}))
             return 1
         root = matches[0]
-    hops = int(args.hops)
-    max_nodes = int(args.max_nodes)
+    tiny = bool(getattr(args, "tiny", False))
+    if tiny:
+        hops = TINY_HOPS
+        max_nodes = TINY_MAX_NODES
+    else:
+        hops = int(args.hops)
+        max_nodes = int(args.max_nodes)
+    summary = bool(getattr(args, "summary", False))
     window, budget = resolve_pack_budget(args)
 
     def neighbors(path: str):
@@ -414,10 +467,11 @@ def cmd_pack(args) -> int:
                 if n not in seen:
                     frontier.append((n, d + 1))
 
+    render = render_pack_summary if summary else render_context_pack
     # First pass: render with placeholder token line, then re-render with the count.
-    draft = render_context_pack(root, included, concepts, hops, 0, budget)
+    draft = render(root, included, concepts, hops, 0, budget)
     tokens = estimate_tokens(draft)
-    text = render_context_pack(root, included, concepts, hops, tokens, budget)
+    text = render(root, included, concepts, hops, tokens, budget)
     tokens = estimate_tokens(text)
     if tokens > budget:
         print(
@@ -428,11 +482,18 @@ def cmd_pack(args) -> int:
                     "budget": budget,
                     "window": window,
                     "nodes": included,
-                    "hint": "narrow --hops / --root; node clip is not a token budget",
+                    "hint": "narrow --hops / --tiny / --root; node clip is not a token budget",
                 }
             )
         )
         return 1
+    if summary:
+        if args.out:
+            out = Path(args.out)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(text, encoding="utf-8")
+        print(text, end="")
+        return 0
     out = Path(args.out) if args.out else bundle / "packs" / f"{slugify(concepts[root]['meta'].get('title', 'pack'))}-pack.md"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(text, encoding="utf-8")
@@ -445,6 +506,8 @@ def cmd_pack(args) -> int:
                 "tokens": tokens,
                 "budget": budget,
                 "window": window,
+                "hops": hops,
+                "tiny": tiny,
                 "overlay": str(overlay) if overlay else None,
             }
         )
@@ -486,6 +549,16 @@ def main():
     k.add_argument("--window-tokens", default="")
     k.add_argument("--out", default="")
     k.add_argument("--overlay", default="")
+    k.add_argument(
+        "--tiny",
+        action="store_true",
+        help=f"Chat probe: hops={TINY_HOPS}, max_nodes={TINY_MAX_NODES}",
+    )
+    k.add_argument(
+        "--summary",
+        action="store_true",
+        help="Print compact card-friendly markdown. Bodies off. Fail-closed budget.",
+    )
 
     args = p.parse_args()
     fn = {"init-bundle": cmd_init, "write": cmd_write, "validate": cmd_validate, "pack": cmd_pack}[args.cmd]
