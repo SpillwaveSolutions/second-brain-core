@@ -8,7 +8,7 @@ The [0.4.22 catalog](https://github.com/SpillwaveSolutions/second-brain-marketpl
 
 | Catalog entry | Release tag, manifest and tested commit | Main at audit (manifest) | Test changes |
 |---|---|---|---|
-| project-knowledge-capture | v0.10.1 · 0.10.1 · `80712a7b9eedd8e1cf130bf52e21e0b4ccb22de5` | Same | [PR 90 · 880db3c4b4fe0109bac753ded83f697b697bcd7d](https://github.com/SpillwaveSolutions/project-knowledge-capture/pull/90) |
+| project-knowledge-capture | v0.10.1 · 0.10.1 · `80712a7b9eedd8e1cf130bf52e21e0b4ccb22de5` | Same | [PR 90 · 321e13a6d84a549ad20f77a146b639fbafd489bf](https://github.com/SpillwaveSolutions/project-knowledge-capture/pull/90) |
 | research-knowledge-capture | v0.2.11 · 0.2.11 · `163164b75cf2def304d26816604beb61c6d2a47b` | `2f804538a14c26b520413aeba7f32a8fe1170191` (0.2.13) | [PR 44 · 8a2fc802559315e1adf8bcf7fc2e59336f23a455](https://github.com/SpillwaveSolutions/research-knowledge-capture/pull/44) |
 | system-architecture-capture | v0.5.7 · 0.5.7 · `8f24df0da1d3325af43b8cf88efc9fbe94539601` | `1cd053bb1d8deed7484415fd26cef587f2b8b04f` (0.5.7), workflow and local CI changes | [PR 50 · e2d1a6e273a77508b143edc924b9934e0aec9348](https://github.com/SpillwaveSolutions/system-architecture-capture/pull/50) |
 | data-engineering-knowledge-capture | v0.5.3 · 0.5.3 · `81002fd45a23eb77c81eedfe621afe435fb3b43c` | Same | [PR 58 · 8034921631381e2d2df2e7e9a77f48697ee28edd](https://github.com/SpillwaveSolutions/data-engineering-knowledge-capture/pull/58) |
