@@ -432,6 +432,75 @@ def test_pack_summary_is_compact_and_bodies_off():
         assert not r.stdout.lstrip().startswith("{")
 
 
+def test_four_pack_reference_cards_are_grounded_and_read_only():
+    """Grade a deterministic reference card against real pack output and source bodies."""
+    import re
+    import shutil
+
+    leads = {
+        "/decisions/retention.md": "DecisionRecord",
+        "/packages/amber.md": "Package",
+        "/metrics/evenings.md": "Metric",
+        "/research/measurement.md": "Finding",
+    }
+    cases = (
+        ("How many evenings does the amber relay retention decision cover?",
+         "high", "/research/measurement.md", "12 evenings"),
+        ("How many satellites does the amber relay retention decision cover?",
+         "low", None, None),
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        bundle = Path(tmp) / "brain"
+        shutil.copytree(ROOT / "tests" / "fixtures" / "relay", bundle)
+
+        def snapshot():
+            return {p.relative_to(bundle): (p.stat().st_mtime_ns, p.read_bytes() if p.is_file() else None)
+                    for p in bundle.rglob("*")}
+
+        before = snapshot()
+        result = run("validate", "--bundle", str(bundle))
+        assert result.returncode == 0, result.stdout
+        assert json.loads(result.stdout) == {"ok": True, "concepts": 4, "errors": []}
+        for query, expected_fit, expected_path, expected_value in cases:
+            result = run("pack", "--bundle", str(bundle), "--root", "/decisions/retention.md",
+                         "--tiny", "--summary", "--window-tokens", "128000")
+            assert result.returncode == 0, result.stdout + result.stderr
+            summary = result.stdout.splitlines()
+            assert summary[1].startswith("- Seed: `/decisions/retention.md` (`DecisionRecord`)")
+            budget = re.fullmatch(r"- Pack: hops=1 nodes=4 tokens=(\d+)/32000", summary[2])
+            assert budget and 0 < int(budget[1]) <= 32000, summary
+            assert summary[3] == "- Lead nodes:"
+            rows = [line.strip().removeprefix("- ").split(" · ") for line in summary[4:]]
+            assert {path.strip("`"): kind for _, kind, path, _ in rows} == leads
+
+            # Offline oracle for these two questions only. Read only paths returned by Core.
+            unit = re.fullmatch(r"How many (\w+) does the amber relay retention decision cover\?", query)[1]
+            matches = []
+            for _, _, path, _ in rows:
+                path = path.strip("`")
+                body = (bundle / path.lstrip("/")).read_text().split("---", 2)[2]
+                quote = re.search(rf"The amber relay archives samples for (\d+ {unit})\.", body)
+                if quote:
+                    matches.append((path, quote[1]))
+            assert matches == ([(expected_path, expected_value)] if expected_path else [])
+            fit = "high" if matches else "low"
+            gap = "none" if matches else f"No lead states a quantity in {unit}."
+            next_step = "stay" if matches else "deepen"
+            card = "\n".join(["## Retrieval card", f"- Query: {query}", summary[1],
+                              f"- Fit: {fit} - {matches[0][1] if matches else gap}",
+                              *summary[2:], f"- Open gaps: {gap}", f"- Next: {next_step}"])
+            fields = re.findall(r"^- ([A-Za-z ]+):", card, re.MULTILINE)
+            assert fields == ["Query", "Seed", "Fit", "Pack", "Lead nodes", "Open gaps", "Next"]
+            assert f"- Fit: {expected_fit} -" in card
+            if expected_path:
+                assert f"`{expected_path}`" in card and expected_value in card
+            else:
+                assert "- Open gaps: No lead states a quantity in satellites." in card
+                assert "- Next: deepen" in card
+                assert not re.search(r"\d+ satellites", card)
+            assert snapshot() == before
+
+
 def test_pack_summary_writes_only_when_out_set():
     with tempfile.TemporaryDirectory() as td:
         bundle = Path(td) / "knowledge"
@@ -698,6 +767,7 @@ def test_dailydigest_is_cos_only():
 if __name__ == "__main__":
     test_colon_author_parses_when_yaml_installed()
     test_sample_validates()
+    test_four_pack_reference_cards_are_grounded_and_read_only()
     test_write_requires_author()
     test_init_and_write()
     test_isolation_two_sessions_do_not_clobber()
