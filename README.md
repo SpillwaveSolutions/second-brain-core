@@ -121,6 +121,14 @@ Write isolation (worktree + PR) lives in second-brain-core: [docs/ISOLATION.md](
 
 Eight job-function plugins plus core. Knowledge root is always a local path or env the human already owns.
 
+## Offline tests
+
+From this checkout, run `python3 tests/test_sbc.py` for the Core CLI suite,
+including the four-pack seeded summary and Lead-source test. `npm test` invokes the same
+runner. For pytest discovery, install pytest and PyYAML in your test environment
+and run `python3 -m pytest -q tests`. See the [recall audit](docs/RECALL-AUDIT.md)
+for revision pins, per-pack results, the reference cards and the coverage of host-agent evaluation.
+
 ## License
 
 MIT. Copyright 2026 Rick Hightower / contributors.

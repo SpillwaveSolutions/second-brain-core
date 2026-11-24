@@ -432,6 +432,52 @@ def test_pack_summary_is_compact_and_bodies_off():
         assert not r.stdout.lstrip().startswith("{")
 
 
+def test_four_pack_seeded_summary_and_lead_sources_are_read_only():
+    """Check the Core-generated fields used by an offline reference card."""
+    import re
+    import shutil
+
+    expected_leads = {
+        "/decisions/retention.md": "DecisionRecord",
+        "/packages/amber.md": "Package",
+        "/metrics/evenings.md": "Metric",
+        "/research/measurement.md": "Finding",
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        bundle = Path(tmp) / "brain"
+        shutil.copytree(ROOT / "tests" / "fixtures" / "relay", bundle)
+
+        def snapshot():
+            return {p.relative_to(bundle): (p.stat().st_mtime_ns, p.read_bytes() if p.is_file() else None)
+                    for p in bundle.rglob("*")}
+
+        before = snapshot()
+        result = run("validate", "--bundle", str(bundle))
+        assert result.returncode == 0, result.stdout
+        assert json.loads(result.stdout) == {"ok": True, "concepts": 4, "errors": []}
+        result = run("pack", "--bundle", str(bundle), "--root", "/decisions/retention.md",
+                     "--tiny", "--summary", "--window-tokens", "128000")
+        assert result.returncode == 0, result.stdout + result.stderr
+        summary = result.stdout.splitlines()
+        assert summary[1].startswith("- Seed: `/decisions/retention.md` (`DecisionRecord`)")
+        budget = re.fullmatch(r"- Pack: hops=1 nodes=4 tokens=(\d+)/32000", summary[2])
+        assert budget and 0 < int(budget[1]) <= 32000, summary
+        assert summary[3] == "- Lead nodes:"
+        rows = [line.strip().removeprefix("- ").split(" · ") for line in summary[4:]]
+        leads = {path.strip("`"): kind for _, kind, path, _ in rows}
+        assert leads == expected_leads
+
+        bodies = {path: (bundle / path.lstrip("/")).read_text().split("---", 2)[2] for path in leads}
+        fact = "The amber relay archives samples for 12 evenings."
+        evidence = [(path.strip("`"), description) for _, _, path, description in rows if fact in description]
+        assert evidence == [("/research/measurement.md", fact)]
+        citation, quote = evidence[0]
+        assert quote in bodies[citation].splitlines()
+        assert all("satellite" not in line.lower() for line in summary)
+        assert all("satellite" not in body.lower() for body in bodies.values())
+        assert snapshot() == before
+
+
 def test_pack_summary_writes_only_when_out_set():
     with tempfile.TemporaryDirectory() as td:
         bundle = Path(td) / "knowledge"
@@ -698,6 +744,7 @@ def test_dailydigest_is_cos_only():
 if __name__ == "__main__":
     test_colon_author_parses_when_yaml_installed()
     test_sample_validates()
+    test_four_pack_seeded_summary_and_lead_sources_are_read_only()
     test_write_requires_author()
     test_init_and_write()
     test_isolation_two_sessions_do_not_clobber()
