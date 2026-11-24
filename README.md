@@ -124,11 +124,10 @@ Eight job-function plugins plus core. Knowledge root is always a local path or e
 ## Offline tests
 
 From this checkout, run `python3 tests/test_sbc.py` for the Core CLI suite,
-including the four-pack source and result-card fixture. `npm test` invokes the same
+including the four-pack seeded summary and Lead-source test. `npm test` invokes the same
 runner. For pytest discovery, install pytest and PyYAML in your test environment
 and run `python3 -m pytest -q tests`. See the [recall audit](docs/RECALL-AUDIT.md)
-for revision pins, per-pack results and the distinction between the offline card
-fixture and host-agent evaluation.
+for revision pins, per-pack results, the reference cards and the coverage of host-agent evaluation.
 
 ## License
 
